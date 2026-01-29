@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+import MathTest from '@/components/MathTest';
 
 export default function Index() {
   const { toast } = useToast();
@@ -21,6 +22,7 @@ export default function Index() {
   
   const [showExerciseDialog, setShowExerciseDialog] = useState(false);
   const [showTestDialog, setShowTestDialog] = useState(false);
+  const [showMathTest, setShowMathTest] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<any>(null);
   const [selectedTest, setSelectedTest] = useState<any>(null);
@@ -186,13 +188,21 @@ export default function Index() {
 
   const handleTestClick = (test: any) => {
     setSelectedTest(test);
-    setShowTestDialog(true);
+    if (test.title === 'Математическая головоломка') {
+      setShowMathTest(true);
+    } else {
+      setShowTestDialog(true);
+    }
   };
 
-  const completeTest = () => {
+  const completeTest = (score?: number) => {
     if (selectedTest) {
-      const newXp = xp + selectedTest.xp;
-      const newEarnedXp = earnedXpToday + selectedTest.xp;
+      const earnedXp = score !== undefined 
+        ? Math.round((score / 100) * selectedTest.xp)
+        : selectedTest.xp;
+      
+      const newXp = xp + earnedXp;
+      const newEarnedXp = earnedXpToday + earnedXp;
       setXp(newXp);
       setEarnedXpToday(newEarnedXp);
       setTestsCompleted(testsCompleted + 1);
@@ -205,15 +215,32 @@ export default function Index() {
           description: `Поздравляем! Теперь ты Level ${level + 1}!`,
         });
       } else {
+        const grade = score !== undefined
+          ? score >= 80 ? '🏆 Отлично!' : score >= 60 ? '👍 Хорошо!' : '💪 Продолжай тренироваться!'
+          : '🧠 Тест пройден!';
+        
         toast({
-          title: "Тест пройден! 🧠",
-          description: `+${selectedTest.xp} XP получено!`,
+          title: grade,
+          description: score !== undefined 
+            ? `Правильных ответов: ${score}%. Получено ${earnedXp} XP!`
+            : `+${earnedXp} XP получено!`,
         });
       }
       
       setShowTestDialog(false);
+      setShowMathTest(false);
       setSelectedTest(null);
     }
+  };
+
+  const cancelTest = () => {
+    setShowMathTest(false);
+    setShowTestDialog(false);
+    setSelectedTest(null);
+    toast({
+      title: "Тест прерван",
+      description: "Попробуй ещё раз когда будешь готов!",
+    });
   };
 
   return (
@@ -572,6 +599,22 @@ export default function Index() {
                   Закрыть
                 </Button>
               </div>
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showMathTest} onOpenChange={setShowMathTest}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Математическая головоломка</DialogTitle>
+            <DialogDescription>
+              <MathTest
+                totalQuestions={selectedTest?.questions || 10}
+                difficulty={selectedTest?.difficulty || 'Средне'}
+                onComplete={completeTest}
+                onCancel={cancelTest}
+              />
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
