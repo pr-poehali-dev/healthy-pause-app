@@ -8,26 +8,34 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import MathTest from '@/components/MathTest';
+import AttentionTest from '@/components/AttentionTest';
+import LogicTest from '@/components/LogicTest';
 
 export default function Index() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('home');
   const [screenTime, setScreenTime] = useState(45);
-  const [level, setLevel] = useState(5);
-  const [xp, setXp] = useState(750);
-  const [streak, setStreak] = useState(7);
-  const [exercisesCompleted, setExercisesCompleted] = useState(4);
-  const [testsCompleted, setTestsCompleted] = useState(2);
-  const [earnedXpToday, setEarnedXpToday] = useState(320);
+  const [level, setLevel] = useState(1);
+  const [xp, setXp] = useState(0);
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [streak, setStreak] = useState(1);
+  const [exercisesCompleted, setExercisesCompleted] = useState(0);
+  const [testsCompleted, setTestsCompleted] = useState(0);
+  const [earnedXpToday, setEarnedXpToday] = useState(0);
+  const [totalExercises, setTotalExercises] = useState(0);
+  const [totalTests, setTotalTests] = useState(0);
   
   const [showExerciseDialog, setShowExerciseDialog] = useState(false);
   const [showTestDialog, setShowTestDialog] = useState(false);
   const [showMathTest, setShowMathTest] = useState(false);
+  const [showAttentionTest, setShowAttentionTest] = useState(false);
+  const [showLogicTest, setShowLogicTest] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<any>(null);
   const [selectedTest, setSelectedTest] = useState<any>(null);
   const [isPauseActive, setIsPauseActive] = useState(false);
   const [pauseTimer, setPauseTimer] = useState(0);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<number[]>([1]);
 
   const exercises = [
     {
@@ -130,20 +138,48 @@ export default function Index() {
   ];
 
   const achievements = [
-    { id: 1, title: 'Первая пауза', icon: 'Award', unlocked: true, date: '24 янв' },
-    { id: 2, title: '7 дней подряд', icon: 'Flame', unlocked: true, date: 'Сегодня' },
-    { id: 3, title: 'Мастер разминки', icon: 'Star', unlocked: true, date: '26 янв' },
-    { id: 4, title: '100 упражнений', icon: 'Target', unlocked: false, progress: 67 },
-    { id: 5, title: 'Гений тестов', icon: 'Trophy', unlocked: false, progress: 45 },
-    { id: 6, title: '30 дней подряд', icon: 'Zap', unlocked: false, progress: 23 },
+    { id: 1, title: 'Первые шаги', icon: 'Award', unlocked: false, requirement: 'exercise', count: 1, current: totalExercises, points: 10 },
+    { id: 2, title: '7 дней подряд', icon: 'Flame', unlocked: false, requirement: 'streak', count: 7, current: streak, points: 50 },
+    { id: 3, title: 'Мастер разминки', icon: 'Star', unlocked: false, requirement: 'exercise', count: 10, current: totalExercises, points: 100 },
+    { id: 4, title: '100 упражнений', icon: 'Target', unlocked: false, requirement: 'exercise', count: 100, current: totalExercises, points: 500 },
+    { id: 5, title: 'Гений тестов', icon: 'Trophy', unlocked: false, requirement: 'test', count: 10, current: totalTests, points: 150 },
+    { id: 6, title: '30 дней подряд', icon: 'Zap', unlocked: false, requirement: 'streak', count: 30, current: streak, points: 300 },
+    { id: 7, title: 'Уровень 10', icon: 'TrendingUp', unlocked: false, requirement: 'level', count: 10, current: level, points: 200 },
+    { id: 8, title: 'Уровень 50', icon: 'Rocket', unlocked: false, requirement: 'level', count: 50, current: level, points: 1000 },
+    { id: 9, title: 'Математик', icon: 'Calculator', unlocked: false, requirement: 'test', count: 50, current: totalTests, points: 400 },
+    { id: 10, title: '500 упражнений', icon: 'Medal', unlocked: false, requirement: 'exercise', count: 500, current: totalExercises, points: 2000 },
+    { id: 11, title: '100 дней подряд', icon: 'Crown', unlocked: false, requirement: 'streak', count: 100, current: streak, points: 1500 },
+    { id: 12, title: 'Уровень 100', icon: 'Gem', unlocked: false, requirement: 'level', count: 100, current: level, points: 5000 },
   ];
 
   const stats = [
     { label: 'Упражнения сегодня', value: exercisesCompleted, icon: 'Activity', color: 'text-purple-600' },
     { label: 'Пройдено тестов', value: testsCompleted, icon: 'Brain', color: 'text-blue-600' },
-    { label: 'Заработано XP', value: earnedXpToday, icon: 'Zap', color: 'text-orange-600' },
+    { label: 'Баллы', value: totalPoints, icon: 'Star', color: 'text-yellow-600' },
     { label: 'Серия дней', value: streak, icon: 'Flame', color: 'text-red-600' },
   ];
+
+  const checkAchievements = () => {
+    const newUnlocked: number[] = [];
+    achievements.forEach(achievement => {
+      if (!unlockedAchievements.includes(achievement.id)) {
+        const progress = achievement.current / achievement.count;
+        if (progress >= 1) {
+          newUnlocked.push(achievement.id);
+          setTotalPoints(totalPoints + achievement.points);
+          toast({
+            title: "🏆 Новое достижение!",
+            description: `${achievement.title} — получено ${achievement.points} баллов!`,
+          });
+        }
+      }
+    });
+    if (newUnlocked.length > 0) {
+      setUnlockedAchievements([...unlockedAchievements, ...newUnlocked]);
+    }
+  };
+
+  const xpForNextLevel = Math.floor(1000 * Math.pow(1.1, level - 1));
 
   const startPause = () => {
     setIsPauseActive(true);
@@ -166,10 +202,12 @@ export default function Index() {
       setXp(newXp);
       setEarnedXpToday(newEarnedXp);
       setExercisesCompleted(exercisesCompleted + 1);
+      setTotalExercises(totalExercises + 1);
       
-      if (newXp >= 1000) {
+      const xpNeeded = xpForNextLevel;
+      if (newXp >= xpNeeded && level < 200) {
         setLevel(level + 1);
-        setXp(newXp - 1000);
+        setXp(newXp - xpNeeded);
         toast({
           title: "🎉 Новый уровень!",
           description: `Поздравляем! Теперь ты Level ${level + 1}!`,
@@ -183,6 +221,7 @@ export default function Index() {
       
       setShowExerciseDialog(false);
       setSelectedExercise(null);
+      checkAchievements();
     }
   };
 
@@ -190,6 +229,10 @@ export default function Index() {
     setSelectedTest(test);
     if (test.title === 'Математическая головоломка') {
       setShowMathTest(true);
+    } else if (test.title === 'Тест на внимание') {
+      setShowAttentionTest(true);
+    } else if (test.title === 'Логические задачи') {
+      setShowLogicTest(true);
     } else {
       setShowTestDialog(true);
     }
@@ -206,10 +249,12 @@ export default function Index() {
       setXp(newXp);
       setEarnedXpToday(newEarnedXp);
       setTestsCompleted(testsCompleted + 1);
+      setTotalTests(totalTests + 1);
       
-      if (newXp >= 1000) {
+      const xpNeeded = xpForNextLevel;
+      if (newXp >= xpNeeded && level < 200) {
         setLevel(level + 1);
-        setXp(newXp - 1000);
+        setXp(newXp - xpNeeded);
         toast({
           title: "🎉 Новый уровень!",
           description: `Поздравляем! Теперь ты Level ${level + 1}!`,
@@ -229,12 +274,17 @@ export default function Index() {
       
       setShowTestDialog(false);
       setShowMathTest(false);
+      setShowAttentionTest(false);
+      setShowLogicTest(false);
       setSelectedTest(null);
+      checkAchievements();
     }
   };
 
   const cancelTest = () => {
     setShowMathTest(false);
+    setShowAttentionTest(false);
+    setShowLogicTest(false);
     setShowTestDialog(false);
     setSelectedTest(null);
     toast({
@@ -277,15 +327,15 @@ export default function Index() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-purple-100 text-sm mb-1">Твой уровень</p>
-                <h2 className="text-4xl font-bold">Level {level}</h2>
+                <h2 className="text-4xl font-bold">Level {level} / 200</h2>
               </div>
               <div className="text-right">
                 <p className="text-purple-100 text-sm mb-1">Опыт</p>
-                <p className="text-2xl font-bold">{xp} / 1000 XP</p>
+                <p className="text-2xl font-bold">{xp} / {xpForNextLevel} XP</p>
               </div>
             </div>
-            <Progress value={(xp / 1000) * 100} className="h-3 bg-purple-300" />
-            <p className="text-purple-100 text-sm mt-2">Ещё {1000 - xp} XP до следующего уровня!</p>
+            <Progress value={(xp / xpForNextLevel) * 100} className="h-3 bg-purple-300" />
+            <p className="text-purple-100 text-sm mt-2">Ещё {xpForNextLevel - xp} XP до следующего уровня!</p>
           </Card>
         </header>
 
@@ -456,45 +506,51 @@ export default function Index() {
             <div>
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Твои достижения</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {achievements.map((achievement) => (
-                  <Card
-                    key={achievement.id}
-                    className={`p-6 transition-all ${
-                      achievement.unlocked
-                        ? 'bg-white shadow-lg hover-lift cursor-pointer'
-                        : 'bg-gray-50 opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div
-                        className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-                          achievement.unlocked
-                            ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
-                            : 'bg-gray-200'
-                        }`}
-                      >
-                        <Icon
-                          name={achievement.icon as any}
-                          size={24}
-                          className={achievement.unlocked ? 'text-white' : 'text-gray-400'}
-                        />
+                {achievements.map((achievement) => {
+                  const isUnlocked = unlockedAchievements.includes(achievement.id);
+                  const progress = Math.min((achievement.current / achievement.count) * 100, 100);
+                  
+                  return (
+                    <Card
+                      key={achievement.id}
+                      className={`p-6 transition-all ${
+                        isUnlocked
+                          ? 'bg-white shadow-lg hover-lift cursor-pointer'
+                          : 'bg-gray-50 opacity-60'
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div
+                          className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                            isUnlocked
+                              ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                              : 'bg-gray-200'
+                          }`}
+                        >
+                          <Icon
+                            name={achievement.icon as any}
+                            size={24}
+                            className={isUnlocked ? 'text-white' : 'text-gray-400'}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-gray-800 mb-1">{achievement.title}</h3>
+                          {isUnlocked ? (
+                            <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                              +{achievement.points} баллов
+                            </Badge>
+                          ) : (
+                            <div className="space-y-2">
+                              <p className="text-xs text-gray-600">{achievement.current} / {achievement.count}</p>
+                              <Progress value={progress} className="h-1.5" />
+                              <p className="text-xs text-gray-500">{Math.round(progress)}% • +{achievement.points} баллов</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-gray-800 mb-1">{achievement.title}</h3>
-                        {achievement.unlocked ? (
-                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                            Получено {achievement.date}
-                          </Badge>
-                        ) : (
-                          <div className="space-y-2">
-                            <Progress value={achievement.progress} className="h-1.5" />
-                            <p className="text-xs text-gray-500">{achievement.progress}% выполнено</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           </TabsContent>
@@ -612,6 +668,38 @@ export default function Index() {
               <MathTest
                 totalQuestions={selectedTest?.questions || 10}
                 difficulty={selectedTest?.difficulty || 'Средне'}
+                onComplete={completeTest}
+                onCancel={cancelTest}
+              />
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAttentionTest} onOpenChange={setShowAttentionTest}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Тест на внимание</DialogTitle>
+            <DialogDescription>
+              <AttentionTest
+                totalQuestions={selectedTest?.questions || 8}
+                difficulty={selectedTest?.difficulty || 'Легко'}
+                onComplete={completeTest}
+                onCancel={cancelTest}
+              />
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showLogicTest} onOpenChange={setShowLogicTest}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Логические задачи</DialogTitle>
+            <DialogDescription>
+              <LogicTest
+                totalQuestions={selectedTest?.questions || 12}
+                difficulty={selectedTest?.difficulty || 'Сложно'}
                 onComplete={completeTest}
                 onCancel={cancelTest}
               />
